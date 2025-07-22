@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-07-22 00:13:11 by Eclipse SUMO netedit Version 1.21.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- Vehicles, persons and containers (sorted by depart) -->
+    <person id="p_0" depart="0.00">
+        <personTrip from="BroadwayEB0" to="BroadwayNB0"/>
+    </person>
+    <person id="p_1" depart="0.00">
+        <personTrip from="BroadwaySB0" to="BroadwayEB1"/>
+    </person>
+    <person id="p_2" depart="0.00">
+        <personTrip from="BroadwayWB1" to="BroadwayNB0"/>
+    </person>
+    <person id="p_3" depart="0.00">
+        <personTrip from="BroadwaySB0" to="BroadwayWB0"/>
+    </person>
+    <person id="p_4" depart="0.00">
+        <personTrip from="BroadwayEB0" to="BroadwaySB1"/>
+    </person>
+    <person id="p_5" depart="0.00">
+        <personTrip from="BroadwayWB1" to="BroadwayNB0"/>
+    </person>
+    <personFlow id="pf_0" begin="0.00" end="3600.00" personsPerHour="1800">
+        <personTrip from="BroadwayEB0" to="BroadwayNB0"/>
+    </personFlow>
+    <personFlow id="pf_1" begin="0.00" end="3600.00" personsPerHour="1800">
+        <personTrip from="BroadwaySB0" to="BroadwayEB1"/>
+    </personFlow>
+    <personFlow id="pf_2" begin="0.00" end="3600.00" personsPerHour="1800">
+        <personTrip from="BroadwayNB1" to="BroadwayWB0"/>
+    </personFlow>
+    <personFlow id="pf_3" begin="0.00" end="3600.00" personsPerHour="1800">
+        <personTrip from="BroadwaySB0" to="BroadwayEB1"/>
+    </personFlow>
+</routes>
