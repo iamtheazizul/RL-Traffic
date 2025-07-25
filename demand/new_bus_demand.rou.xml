@@ -17,7 +17,7 @@
     <flow id="f_0" begin="0.00" from="ClintonEB0" to="MapleWB1" end="3600.00" vehsPerHour="1800"/>
     <flow id="f_1" begin="0.00" from="EllsworthSB0" to="DivisionSB1" end="3600.00" vehsPerHour="1800"/>
     <flow id="f_2" begin="0.00" from="DivisionNB1" to="MapleEB1" end="3600.00" vehsPerHour="600"/>
-    <flow id="f_4" begin="0.00" from="DivisionNB1" to="EllsworthNB0" end="3600.00" vehsPerHour="1800"/>
+    <flow id="f_1" begin="0.00" from="DivisionNB1" to="EllsworthNB0" end="3600.00" vehsPerHour="1800"/>
     <flow id="f_3" begin="0.00" from="669608343#0" to="-34018756#8" end="3600.00" vehsPerHour="1800"/>
     <personFlow id="pf_0" begin="0.00" end="3600.00" personsPerHour="50">
         <personTrip from="BroadwayEB0" to="BroadwayNB0"/>
