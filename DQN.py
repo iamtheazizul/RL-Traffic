@@ -21,7 +21,7 @@ else:
 
 # Step 3: Define SUMO configuration
 Sumo_config = [
-    'sumo',
+    'sumo-gui',
     '-c', 'osm_25.sumocfg',  # goes one directory up
     '--step-length', '0.1',
     '--delay', '1000',

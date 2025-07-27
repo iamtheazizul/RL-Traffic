@@ -1,0 +1,2 @@
+1. Try DQN with old algorithm
+2. Try DN for more time and episodes
