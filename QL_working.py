@@ -224,9 +224,39 @@ def get_action_from_policy(state):
             Q_table[state] = np.zeros(len(ACTIONS))
         return int(np.argmax(Q_table[state]))
 
+def evaluate_q_learning(env, Q_table, episodes=10):
+    eval_rewards = []
+    eval_queues = []
+    for _ in range(episodes):
+        state, _ = env.reset()
+        cumulative_reward = 0.0
+        total_queue = 0.0
+        for step in range(STEPS_PER_EPISODE):
+            state_discrete = discretize_state(state)
+            if state_discrete not in Q_table:
+                Q_table[state_discrete] = np.zeros(len(ACTIONS))
+            action = int(np.argmax(Q_table[state_discrete]))
+            state, reward, terminated, truncated, _ = env.step(action)
+            cumulative_reward += reward
+            total_queue += sum(state[:-1])
+            if terminated or truncated:
+                break
+        avg_queue = total_queue / (step + 1) if step >= 0 else 0
+        eval_rewards.append(cumulative_reward)
+        eval_queues.append(avg_queue)
+    avg_eval_reward = np.mean(eval_rewards)
+    avg_eval_queue = np.mean(eval_queues)
+    print(f"[Q-learning] Evaluation over {episodes} episodes: Avg Reward: {avg_eval_reward:.2f}, Avg Queue Length: {avg_eval_queue:.2f}")
+    return avg_eval_reward, avg_eval_queue
+
 # Episode-based Training Loop
 print("\n=== Starting Episode-based Q-learning ===")
 env = SumoEnv(Sumo_config)
+
+eval_episode_history = []
+eval_reward_history = []
+eval_queue_history = []
+eval_episodes = [50, 100, 150, 200, 250, 300, 350, 400]
 
 for episode in range(TOTAL_EPISODES):
     state, info = env.reset()
@@ -254,10 +284,19 @@ for episode in range(TOTAL_EPISODES):
     queue_history = env.queue_history
     print(f"Episode {episode + 1} Summary: Cumulative Reward: {reward_history[-1]:.2f}, Avg Queue Length: {queue_history[-1]:.2f}")
 
+    if (episode + 1) in eval_episodes:
+        avg_eval_reward, avg_eval_queue = evaluate_q_learning(env, Q_table, episodes=10)
+        eval_episode_history.append(episode + 1)
+        eval_reward_history.append(avg_eval_reward)
+        eval_queue_history.append(avg_eval_queue)
+
 # For Q-learning (QL.py)
 np.save("ql_episode_history.npy", env.episode_history)
 np.save("ql_reward_history.npy", env.reward_history)
 np.save("ql_queue_history.npy", env.queue_history)
+np.save("ql_eval_episode_history.npy", np.array(eval_episode_history))
+np.save("ql_eval_reward_history.npy", np.array(eval_reward_history))
+np.save("ql_eval_queue_history.npy", np.array(eval_queue_history))
 
 import pickle
 with open("q_table.pkl", "wb") as f:

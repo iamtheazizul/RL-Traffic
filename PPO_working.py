@@ -177,20 +177,61 @@ class SumoEnv(gym.Env):
         pass
 
 # Step 5: Custom Callback for Episode Control
-class EpisodeCallback(BaseCallback):
-    def __init__(self, env, total_episodes=100, verbose=0):
-        super(EpisodeCallback, self).__init__(verbose)
+class EpisodeCallbackPPO(BaseCallback):
+    def __init__(self, env, total_episodes=400, eval_interval=50, eval_episodes=10, verbose=0):
+        super(EpisodeCallbackPPO, self).__init__(verbose)
         self.env = env
         self.total_episodes = total_episodes
+        self.eval_interval = eval_interval
+        self.eval_episodes = eval_episodes
         self.current_episode = 0
+        
+        # Lists to store evaluation metrics
+        self.eval_episode_history = []
+        self.eval_reward_history = []
+        self.eval_queue_history = []
 
-    def _on_step(self):
+    def _evaluate_agent(self):
+        eval_rewards = []
+        eval_queues = []
+        for _ in range(self.eval_episodes):
+            state, _ = self.env.reset()
+            done = False
+            episode_reward = 0
+            episode_queue = 0
+            steps = 0
+            while not done:
+                action, _ = self.model.predict(state, deterministic=True)
+                state, reward, terminated, truncated, _ = self.env.step(action)
+                done = terminated or truncated
+                episode_reward += reward
+                episode_queue += sum(state[:-1])
+                steps += 1
+            avg_queue = episode_queue / steps if steps > 0 else 0
+            eval_rewards.append(episode_reward)
+            eval_queues.append(avg_queue)
+        avg_eval_reward = np.mean(eval_rewards)
+        avg_eval_queue = np.mean(eval_queues)
+        print(f"[PPO] Evaluation after episode {self.current_episode}: Avg Reward: {avg_eval_reward:.2f}, Avg Queue Length: {avg_eval_queue:.2f}")
+
+        # Store evaluation results
+        self.eval_episode_history.append(self.current_episode)
+        self.eval_reward_history.append(avg_eval_reward)
+        self.eval_queue_history.append(avg_eval_queue)
+
+        # Save evaluation results
+        np.save("ppo_eval_episode_history.npy", np.array(self.eval_episode_history))
+        np.save("ppo_eval_reward_history.npy", np.array(self.eval_reward_history))
+        np.save("ppo_eval_queue_history.npy", np.array(self.eval_queue_history))
+
+    def _on_step(self) -> bool:
         if self.env.step_count >= self.env.max_steps:
             self.current_episode += 1
+            if self.current_episode % self.eval_interval == 0:
+                self._evaluate_agent()
             if self.current_episode >= self.total_episodes:
                 return False
         return True
-
 # Step 6: Episode-based Training Loop with Stable Baselines3 (PPO)
 print("\n=== Starting Episode-based Reinforcement Learning (PPO with Stable Baselines3) ===")
 
@@ -216,10 +257,8 @@ model = PPO(
 
 # Train for exactly 100 episodes
 TOTAL_EPISODES = 400
-callback = EpisodeCallback(env, total_episodes=TOTAL_EPISODES, verbose=1)
-total_timesteps = TOTAL_EPISODES * env.max_steps  # 100 episodes * 1800 steps
-model.learn(total_timesteps=total_timesteps, callback=callback, progress_bar=True)
-
+callback = EpisodeCallbackPPO(env, total_episodes=TOTAL_EPISODES)
+model.learn(total_timesteps=TOTAL_EPISODES * env.max_steps, callback=callback, progress_bar=True)
 # Save the model
 model.save("ppo_sumo")
 
