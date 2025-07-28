@@ -129,6 +129,7 @@ class SumoEnv(gym.Env):
                 except traci.exceptions.TraCIException:
                     pass
 
+    # Uncomment the following method if you want to use a more complex action application logic
     # def _apply_action(self, action, tls_id="41896158"):
     #     if action == 0:
     #         return  # Keep current phase
@@ -203,11 +204,11 @@ check_env(env)
 model = PPO(
     policy="MlpPolicy",
     env=env,
-    learning_rate=0.0003,  # Suitable for PPO
+    learning_rate=0.001,  # Suitable for PPO
     n_steps=2048,          # Number of steps per rollout
     batch_size=64,         # Mini-batch size
     n_epochs=10,           # Number of epochs per update
-    gamma=0.99,            # Discount factor
+    gamma=0.95,            # Discount factor
     gae_lambda=0.95,       # GAE for advantage estimation
     clip_range=0.2,        # Clipping parameter for PPO
     verbose=1

@@ -5,39 +5,58 @@
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
     <!-- VTypes -->
-    <vType id="Bus" length="8.00" maxSpeed="50.00" vClass="bus" guiShape="bus" sigma="0.5"/>
-    <!-- Vehicles, persons and containers (sorted by depart) -->
-    <flow id="bus_flow_1" type="Bus" begin="0.00" departLane="free" color="red" from="WoodlawnEB1" to="MapleEB0" end="180.00" number="1">
-        <stop busStop="bs_church_broadway" duration="10.00"/>
-    </flow>
-    <flow id="bus_flow_4" type="Bus" begin="0.00" departLane="free" color="red" from="BroadwayNB1" to="BroadwayNB0" end="180.00" number="1">
-        <stop busStop="bs_broadway_lake" duration="10.00"/>
-    </flow>
-    <flow id="f_0" begin="0.00" from="MapleWB0" to="WoodlawnWB1" end="3600.00" vehsPerHour="500"/>
-    <flow id="f_1" begin="0.00" from="-34018756#2" to="BroadwaySB1" end="3600.00" vehsPerHour="1200"/>
-    <flow id="f_10" begin="0.00" from="BroadwayNB1" to="BroadwayWB0" end="3600.00" vehsPerHour="45"/>
-    <flow id="f_11" begin="0.00" from="BroadwayNB1" to="BroadwayEB1" end="3600.00" vehsPerHour="55"/>
+    <!-- Car flows -->
+    <!-- eastbound -->
     <flow id="f_2" begin="0.00" from="WoodlawnEB1" to="MapleEB0" end="3600.00" vehsPerHour="800"/>
-    <flow id="f_3" begin="0.00" from="BroadwayNB1" to="34018756#2" end="3600.00" vehsPerHour="1000"/>
-    <flow id="f_4" begin="0.00" from="BroadwaySB0" to="BroadwayWB0" end="3600.00" vehsPerHour="50"/>
-    <flow id="f_5" begin="0.00" from="BroadwaySB0" to="BroadwayEB1" end="3600.00" vehsPerHour="85.01"/>
-    <flow id="f_6" begin="0.00" from="BroadwayEB0" to="BroadwaySB1" end="3600.00" vehsPerHour="85.01"/>
     <flow id="f_7" begin="0.00" from="BroadwayEB0" to="BroadwayNB0" end="3600.00" vehsPerHour="50"/>
+    <flow id="f_6" begin="0.00" from="BroadwayEB0" to="BroadwaySB1" end="3600.00" vehsPerHour="85.01"/>
+
+    <!-- westbound -->
+    <flow id="f_0" begin="0.00" from="MapleWB0" to="WoodlawnWB1" end="3600.00" vehsPerHour="500"/>
     <flow id="f_8" begin="0.00" from="BroadwayWB1" to="BroadwayNB0" end="3600.00" vehsPerHour="50"/>
     <flow id="f_9" begin="0.00" from="BroadwayWB1" to="BroadwaySB1" end="3600.00" vehsPerHour="30"/>
-    <personFlow id="pf_0" begin="0.00" end="180.00" personsPerHour="1200">
+
+    <!-- northbound -->
+    <flow id="f_3" begin="0.00" from="BroadwayNB1" to="WaltonNB" end="3600.00" vehsPerHour="1000"/>
+    <flow id="f_10" begin="0.00" from="BroadwayNB1" to="BroadwayWB0" end="3600.00" vehsPerHour="45"/>
+    <flow id="f_11" begin="0.00" from="BroadwayNB1" to="BroadwayEB1" end="3600.00" vehsPerHour="55"/>
+
+    <!-- southbound -->
+    <flow id="f_1" begin="0.00" from="WaltonSB" to="BroadwaySB1" end="3600.00" vehsPerHour="1200"/>
+    <flow id="f_5" begin="0.00" from="BroadwaySB0" to="BroadwayEB1" end="3600.00" vehsPerHour="85.01"/>
+    <flow id="f_4" begin="0.00" from="BroadwaySB0" to="BroadwayWB0" end="3600.00" vehsPerHour="50"/>
+
+    <!-- Pedestrian flows -->
+    <!-- eastbound -->
+    <personFlow id="pf_0" begin="0.00" end="180.00" personsPerHour="500">
         <personTrip from="BroadwayEB0" to="BroadwayEB1"/>
     </personFlow>
-    <personFlow id="pf_1" begin="0.00" end="180.00" personsPerHour="1200">
-        <personTrip from="BroadwayNB1" to="BroadwayNB0"/>
-    </personFlow>
-    <personFlow id="pf_2" begin="0.00" end="180.00" personsPerHour="1200">
+    <!-- westbound -->
+    <personFlow id="pf_2" begin="0.00" end="180.00" personsPerHour="500">
         <personTrip from="BroadwayWB1" to="BroadwayWB0"/>
     </personFlow>
-    <personFlow id="pf_3" begin="0.00" end="180.00" personsPerHour="1400.78">
+    <!-- northbound -->
+    <personFlow id="pf_1" begin="0.00" end="180.00" personsPerHour="600">
+        <personTrip from="BroadwayNB1" to="BroadwayNB0"/>
+    </personFlow>
+    <!-- southbound -->
+    <personFlow id="pf_3" begin="0.00" end="180.00" personsPerHour="600">
         <personTrip from="BroadwaySB0" to="BroadwaySB1"/>
     </personFlow>
-    <flow id="bus_flow_2" type="Bus" begin="45.00" departLane="free" color="red" from="BroadwaySB0" to="BroadwaySB1" end="170.00" number="2">
+
+        <vType id="Bus" length="8.00" maxSpeed="50.00" vClass="bus" guiShape="bus" sigma="0.5"/>
+    <!-- Bus flows -->
+    <!-- eastbound -->
+    <flow id="bus_flow_1" type="Bus" begin="40.00" departLane="free" color="red" from="WoodlawnEB1" to="MapleEB0" end="180.00" number="1">
+        <stop busStop="bs_church_broadway" duration="10.00"/>
+    </flow>
+    <!-- northbound -->
+    <flow id="bus_flow_4" type="Bus" begin="80.00" departLane="free" color="red" from="BroadwayNB1" to="BroadwayNB0" end="180.00" number="1">
+        <stop busStop="bs_broadway_lake" duration="10.00"/>
+    </flow>
+    <!-- southbound -->
+    <flow id="bus_flow_2" type="Bus" begin="100.00" departLane="free" color="red" from="BroadwaySB0" to="BroadwaySB1" end="170.00" number="2">
         <stop busStop="bs_broadway_church" duration="10.00"/>
     </flow>
+
 </routes>

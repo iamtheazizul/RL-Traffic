@@ -153,6 +153,7 @@ class SumoEnv(gym.Env):
                     # Handle possible SUMO connection issues gracefully
                     pass
     
+    # Uncomment the following method if you want to use a more complex action application logic
     # def _apply_action(self, action, tls_id="41896158"):
     #     if action == 0:
     #         return  # Keep current phase
@@ -241,8 +242,8 @@ check_env(env)
 model = DQN(
     policy="MlpPolicy",
     env=env,
-    learning_rate=0.1,  # ALPHA
-    gamma=0.9,          # GAMMA
+    learning_rate=0.001,  # ALPHA
+    gamma=0.95,          # GAMMA
     exploration_initial_eps=0.1,  # EPSILON
     exploration_final_eps=0.1,    # Constant exploration
     exploration_fraction=1.0,
