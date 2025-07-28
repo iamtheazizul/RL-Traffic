@@ -1,3 +1,4 @@
+# Import necessary libraries
 import os
 import sys
 import numpy as np
@@ -21,7 +22,7 @@ else:
 
 # Step 3: Define SUMO configuration
 Sumo_config = [
-    'sumo',
+    'sumo',  # Use 'sumo' for non-GUI mode
     '-c', 'config/light.sumocfg',  # goes one directory up
     '--step-length', '0.1',
     '--delay', '1000',
@@ -35,7 +36,9 @@ class SumoEnv(gym.Env):
         self.config = config
         self.action_space = spaces.Discrete(2)  # 0 = keep phase, 1 = switch phase
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(7,), dtype=np.float32)  # (q_EB_0, q_EB_1, q_EB_2, q_SB_0, q_SB_1, q_SB_2, current_phase)
-        self.min_green_steps = 100
+        self.min_green_steps = 100  # 10s for primary green phases (0 and 3)
+        self.min_yellow_steps = 30  # 3s for yellow phases (2 and 5)
+        self.min_pedestrian_steps = 50  # 5s for pedestrian/transition green phases (1 and 4)
         self.step_count = 0
         self.max_steps = 1800  # Steps per episode
         self.cumulative_reward = 0.0
@@ -43,12 +46,13 @@ class SumoEnv(gym.Env):
         self.last_switch_step = -self.min_green_steps
         self.current_simulation_step = 0
         self.episode_count = 0
-
         # Lists to record data for plotting
         self.episode_history = []
         self.reward_history = []
         self.queue_history = []
+        self.braking_history = []
 
+    # Each time an episode is done, we reset the environment
     def reset(self, seed=None, **kwargs):
         # Close any existing SUMO connection
         if traci.isLoaded():
@@ -65,6 +69,8 @@ class SumoEnv(gym.Env):
         info = {"episode": self.episode_count}
         return state, info
 
+    # Functions where a simualtion step is taken, action prompted and reward calculated
+    # Computes cumulative reward and avg. queue length
     def step(self, action):
         self.current_simulation_step = self.step_count
         self._apply_action(action)
@@ -94,6 +100,7 @@ class SumoEnv(gym.Env):
 
         return new_state, reward, terminated, truncated, info
 
+    # Get state values from detectors
     def _get_state(self):
         detector_EB_0 = "e2_2"
         detector_SB_0 = "e2_3"
@@ -125,6 +132,8 @@ class SumoEnv(gym.Env):
     #             traci.trafficlight.setPhase(tls_id, next_phase)
     #             self.last_switch_step = self.current_simulation_step
 
+    # Apply the next action when prompted. Switching between one phase to another requires a buffer time.
+    # **NEED TO FIX**
     def _apply_action(self, action, tls_id="41896158"):
         if action == 0:
             return
@@ -143,22 +152,63 @@ class SumoEnv(gym.Env):
                 except traci.exceptions.TraCIException:
                     # Handle possible SUMO connection issues gracefully
                     pass
-
+    
+    # def _apply_action(self, action, tls_id="41896158"):
+    #     if action == 0:
+    #         return  # Keep current phase
+    #     elif action == 1:
+    #         current_phase = self._get_current_phase(tls_id)
+    #         # Enforce minimum durations based on phase type
+    #         if current_phase in [0, 3]:  # Primary green phases
+    #             if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
+    #                 # print(f"Cannot switch: Phase {current_phase} (green) has not reached min_green_steps ({self.min_green_steps})")
+    #                 return
+    #         elif current_phase in [2, 5]:  # Yellow phases
+    #             if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
+    #                 # print(f"Cannot switch: Phase {current_phase} (yellow) has not reached min_yellow_steps ({self.min_yellow_steps})")
+    #                 return
+    #         elif current_phase in [1, 4]:  # Pedestrian/transition green phases
+    #             if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
+    #                 # print(f"Cannot switch: Phase {current_phase} (pedestrian) has not reached min_pedestrian_steps ({self.min_pedestrian_steps})")
+    #                 return
+    #         # # Check if vehicles are approaching to avoid abrupt red light
+    #         # if self._vehicles_approaching(tls_id):
+    #         #     print(f"Cannot switch: Vehicles approaching in phase {current_phase}")
+    #         #     return
+    #         try:
+    #             program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+    #             num_phases = len(program.phases)
+    #             if num_phases == 0:
+    #                 return
+    #             # Increment phase by 1 modulo total phases
+    #             next_phase = (current_phase + 1) % num_phases
+    #             print(f"Switching from phase {current_phase} to phase {next_phase} at step {self.current_simulation_step}")
+    #             traci.trafficlight.setPhase(tls_id, next_phase)
+    #             self.last_switch_step = self.current_simulation_step
+    #         except traci.exceptions.TraCIException:
+    #             print("TraCIException occurred during phase switch")
+    #             pass
+    
+    # Reward function computed using the queue length
     def _get_reward(self, state):
         total_queue = sum(state[:-1])  # Exclude current_phase
         reward = -float(total_queue)
         return reward
 
+    # TraCI call for queue data
     def _get_queue_length(self, detector_id):
         return traci.lanearea.getLastStepVehicleNumber(detector_id)
 
+    # TraCI call for phase data
     def _get_current_phase(self, tls_id):
         return traci.trafficlight.getPhase(tls_id)
 
+    # TraCI call for closing
     def close(self):
         if traci.isLoaded():
             traci.close()
 
+    # For non-GUI mode
     def render(self, mode="human"):
         pass  # No rendering for non-GUI SUMO
 
@@ -210,6 +260,11 @@ model.learn(total_timesteps=TOTAL_EPISODES * 1500, callback=callback, progress_b
 
 # Save the model
 model.save("dqn_sumo")
+
+# For DQN (DQN_working.py, after updating)
+np.save("dqn_episode_history.npy", env.episode_history)
+np.save("dqn_reward_history.npy", env.reward_history)
+np.save("dqn_queue_history.npy", env.queue_history)
 
 # Close the environment
 env.close()

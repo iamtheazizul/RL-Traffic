@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2025-07-22 09:09:59 by Eclipse SUMO netedit Version 1.21.0
+<!-- generated on 2025-07-26 21:52:33 by Eclipse SUMO netedit Version 1.23.1
 <neteditConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/neteditConfiguration.xsd">
 
     <input>
-        <additional-files value="C:\Users\iamth\OneDrive\Desktop\Research\SUMO\RL_Research_Final_SIM\Saratoga_Simulation\additional\bus_stops.add.xml"/>
-        <route-files value="C:\Users\iamth\OneDrive\Desktop\Research\SUMO\RL_Research_Final_SIM\Saratoga_Simulation\demand\car_demand.rou.xml"/>
-        <sumo-net-file value="C:\Users\iamth\OneDrive\Desktop\Research\SUMO\RL_Research_Final_SIM\Saratoga_Simulation\network\cleaned_network.net.xml"/>
+        <sumocfg-file value="/home/azizulhakim/Research/RL-Traffic/config/light.sumocfg"/>
+        <additional-files value="/home/azizulhakim/Research/RL-Traffic/additional/bus_stops.add.xml"/>
+        <route-files value="/home/azizulhakim/Research/RL-Traffic/demand/light/light_car_demand.rou.xml"/>
+        <sumo-net-file value="/home/azizulhakim/Research/RL-Traffic/network/cleaned_network.net.xml"/>
     </input>
 
     <output>
-        <output-file value="C:\Users\iamth\OneDrive\Desktop\Research\SUMO\RL_Research_Final_SIM\Saratoga_Simulation\network\cleaned_network.net.xml"/>
+        <tls-file value="/home/azizulhakim/Research/RL-Traffic/additional/traffic_lights.ttl.xml"/>
+        <output-file value="/home/azizulhakim/Research/RL-Traffic/network/cleaned_network.net.xml"/>
         <output.street-names value="true"/>
     </output>
 
     <processing>
         <geometry.min-radius.fix.railways value="false"/>
+        <geometry.avoid-overlap value="false"/>
         <geometry.max-grade.fix value="false"/>
         <offset.disable-normalization value="true"/>
         <lefthand value="0"/>
@@ -36,7 +39,7 @@
 </neteditConfiguration>
 -->
 
-<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" avoidOverlap="0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
     <location netOffset="8214242.07,-5324288.16" convBoundary="0.00,0.00,842.49,684.47" origBoundary="-73.789792,43.080863,-73.782224,43.085354" projParameter="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs"/>
 

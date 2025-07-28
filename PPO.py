@@ -20,8 +20,8 @@ else:
 
 # SUMO configuration
 Sumo_config = [
-    'sumo',
-    '-c', 'osm_25.sumocfg',
+    'sumo-gui',
+    '-c', 'config/light.sumocfg',
     '--step-length', '1',
     '--delay', '10'
 ]

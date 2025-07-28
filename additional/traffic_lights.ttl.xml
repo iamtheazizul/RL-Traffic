@@ -7,7 +7,7 @@
         <phase duration="5"  state="gGggrrrgGgrrrrrrrr"/>
         <phase duration="6"  state="yyyyrrryyyrrrrrrrr"/>
     </tlLogic>
-    <tlLogic id="41896158" type="actuated" programID="0" offset="0">
+    <tlLogic id="41896158" type="static" programID="0" offset="0">
         <phase duration="37" state="gGGggrrrgGGgrrrrGrG" minDur="5" maxDur="50"/>
         <phase duration="5"  state="gGGggrrrgGGgrrrrrrr"/>
         <phase duration="3"  state="yyyyyrrryyyyrrrrrrr"/>

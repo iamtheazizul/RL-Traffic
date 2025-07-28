@@ -11,7 +11,6 @@
     <busStop id="bs_broadway_lake" lane="BroadwayNB1_1" startPos="121.43" endPos="131.43" lines="450 452"/>
     <busStop id="bs_church_broadway" lane="BroadwayEB0_1" startPos="61.88" endPos="71.88" lines="450 452"/>
     <busStop id="bs_church_clinton" lane="ClintonWB1_1" startPos="37.52" lines="450 452"/>
-    <busStop id="bs_church_woodlawn" lane="WoodlawnWB1_1" startPos="50.97" lines="450 452"/>
     <busStop id="bs_clinton_church" lane="ClintonEB0_1" startPos="115.81" lines="450 452"/>
     <busStop id="bs_division_broadway" lane="DivisionNB1_1" startPos="75.11" lines="450 452"/>
     <busStop id="bs_ellsworth_broadway_pl" lane="EllsworthNB1_1" startPos="58.77" endPos="68.77" lines="450 452"/>
