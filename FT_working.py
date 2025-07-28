@@ -213,7 +213,7 @@ except traci.exceptions.TraCIException as e:
 traci.close()
 
 # Run for 100 episodes
-TOTAL_EPISODES = 100
+TOTAL_EPISODES = 400
 for episode in range(TOTAL_EPISODES):
     state, info = env.reset()
     for step in range(env.max_steps):

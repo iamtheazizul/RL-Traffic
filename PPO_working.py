@@ -22,7 +22,7 @@ else:
 # Step 3: Define SUMO configuration
 Sumo_config = [
     'sumo',
-    '-c', 'config/light.sumocfg',
+    '-c', 'config/ideal.sumocfg',
     '--step-length', '0.1',
     '--delay', '1000',
     '--lateral-resolution', '0'
@@ -214,7 +214,7 @@ model = PPO(
 )
 
 # Train for exactly 100 episodes
-TOTAL_EPISODES = 100
+TOTAL_EPISODES = 400
 callback = EpisodeCallback(env, total_episodes=TOTAL_EPISODES, verbose=1)
 total_timesteps = TOTAL_EPISODES * env.max_steps  # 100 episodes * 1800 steps
 model.learn(total_timesteps=total_timesteps, callback=callback, progress_bar=True)

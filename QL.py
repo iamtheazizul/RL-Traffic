@@ -19,14 +19,14 @@ else:
 # Define SUMO configuration
 Sumo_config = [
     'sumo',
-    '-c', 'config/light.sumocfg',
+    '-c', 'config/ideal.sumocfg',
     '--step-length', '0.1',
     '--delay', '1000',
     '--lateral-resolution', '0'
 ]
 
 # Reinforcement Learning Hyperparameters
-TOTAL_EPISODES = 100
+TOTAL_EPISODES = 400
 STEPS_PER_EPISODE = 1800
 ALPHA = 0.1
 GAMMA = 0.9

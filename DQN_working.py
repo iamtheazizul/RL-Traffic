@@ -23,7 +23,7 @@ else:
 # Step 3: Define SUMO configuration
 Sumo_config = [
     'sumo',  # Use 'sumo' for non-GUI mode
-    '-c', 'config/light.sumocfg',  # goes one directory up
+    '-c', 'config/ideal.sumocfg',  # goes one directory up
     '--step-length', '0.1',
     '--delay', '1000',
     '--lateral-resolution', '0'
@@ -254,9 +254,9 @@ model = DQN(
 )
 
 # Train for exactly 100 episodes
-TOTAL_EPISODES = 100
+TOTAL_EPISODES = 400
 callback = EpisodeCallback(env, total_episodes=TOTAL_EPISODES, verbose=1)
-model.learn(total_timesteps=TOTAL_EPISODES * 1500, callback=callback, progress_bar=True)
+model.learn(total_timesteps=TOTAL_EPISODES * env.max_steps, callback=callback, progress_bar=True)
 
 # Save the model
 model.save("dqn_sumo")

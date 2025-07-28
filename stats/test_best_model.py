@@ -1,3 +1,5 @@
+import os
+print("Current working directory:", os.getcwd())
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
