@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2025-07-28 00:01:08 by Eclipse SUMO sumo Version 1.23.1
+<sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="config/../network/cleaned_network.net.xml"/>
+        <route-files value="config/../config/demand/ideal/ideal_car_bus_pedestrian_demand.rou.xml"/>
+        <additional-files value="config/../additional/bus_stops.add.xml"/>
+    </input>
+
+    <time>
+        <step-length value="0.1"/>
+    </time>
+
+    <processing>
+        <lateral-resolution value="0"/>
+    </processing>
+
+    <traci_server>
+        <remote-port value="56859"/>
+    </traci_server>
+
+    <gui_only>
+        <delay value="1000"/>
+    </gui_only>
+
+</sumoConfiguration>
+-->
+
+<detector xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/det_e2_file.xsd">
+   <interval begin="0.00" end="180.00" id="e2_3" sampledSeconds="245.95" nVehEntered="28" nVehLeft="26" nVehSeen="28" meanSpeed="1.83" meanTimeLoss="7.61" meanOccupancy="45.43" maxOccupancy="79.16" meanMaxJamLengthInVehicles="1.01" meanMaxJamLengthInMeters="5.32" maxJamLengthInVehicles="2" maxJamLengthInMeters="12.00" jamLengthInVehiclesSum="1819" jamLengthInMetersSum="9579.11" meanHaltingDuration="36.86" maxHaltingDuration="45.10" haltingDurationSum="184.30" meanIntervalHaltingDuration="36.86" maxIntervalHaltingDuration="45.10" intervalHaltingDurationSum="184.30" startedHalts="6.00" meanVehicleNumber="1.38" maxVehicleNumber="2" />
+</detector>
