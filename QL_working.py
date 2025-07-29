@@ -20,13 +20,13 @@ else:
 Sumo_config = [
     'sumo',
     '-c', 'config/ideal.sumocfg',
-    '--step-length', '0.1',
+    # '--step-length', '0.1',
     '--delay', '1000',
     '--lateral-resolution', '0'
 ]
 
 # Reinforcement Learning Hyperparameters
-TOTAL_EPISODES = 400
+TOTAL_EPISODES = 250
 STEPS_PER_EPISODE = 1800
 ALPHA = 0.1
 GAMMA = 0.9
@@ -46,9 +46,9 @@ class SumoEnv(gym.Env):
         self.config = config
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(7,), dtype=np.float32)
-        self.min_green_steps = 100
-        self.min_yellow_steps = 30
-        self.min_pedestrian_steps = 50
+        self.min_green_steps = 10
+        self.min_yellow_steps = 5
+        self.min_pedestrian_steps = 7
         self.step_count = 0
         self.max_steps = 1800
         self.cumulative_reward = 0.0
@@ -123,50 +123,50 @@ class SumoEnv(gym.Env):
 
         return np.array([q_EB_0, q_SB_0, q_SB_1, q_WB_0, q_NB_0, q_NB_1, current_phase], dtype=np.float32)
 
-    def _apply_action(self, action, tls_id="41896158"):
-        if action == 0:
-            return
-        elif action == 1:
-            if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
-                current_phase = self._get_current_phase(tls_id)
-                try:
-                    program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-                    num_phases = len(program.phases)
-                    if num_phases == 0:
-                        return
-                    next_phase = (current_phase + 1) % num_phases
-                    print(f"Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
-                    traci.trafficlight.setPhase(tls_id, next_phase)
-                    self.last_switch_step = self.current_simulation_step
-                except traci.exceptions.TraCIException as e:
-                    print(f"TraCIException during phase switch: {e}")
-    
-    # Uncomment the following method if you want to use a more complex action application logic
     # def _apply_action(self, action, tls_id="41896158"):
     #     if action == 0:
     #         return
     #     elif action == 1:
-    #         current_phase = self._get_current_phase(tls_id)
-    #         if current_phase in [0, 3]:
-    #             if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
-    #                 return
-    #         elif current_phase in [2, 5]:
-    #             if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
-    #                 return
-    #         elif current_phase in [1, 4]:
-    #             if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
-    #                 return
-    #         try:
-    #             program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-    #             num_phases = len(program.phases)
-    #             if num_phases == 0:
-    #                 return
-    #             next_phase = (current_phase + 1) % num_phases
-    #             print(f"Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
-    #             traci.trafficlight.setPhase(tls_id, next_phase)
-    #             self.last_switch_step = self.current_simulation_step
-    #         except traci.exceptions.TraCIException as e:
-    #             print(f"TraCIException during phase switch: {e}")
+    #         if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
+    #             current_phase = self._get_current_phase(tls_id)
+    #             try:
+    #                 program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+    #                 num_phases = len(program.phases)
+    #                 if num_phases == 0:
+    #                     return
+    #                 next_phase = (current_phase + 1) % num_phases
+    #                 print(f"Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
+    #                 traci.trafficlight.setPhase(tls_id, next_phase)
+    #                 self.last_switch_step = self.current_simulation_step
+    #             except traci.exceptions.TraCIException as e:
+    #                 print(f"TraCIException during phase switch: {e}")
+    
+    # Uncomment the following method if you want to use a more complex action application logic
+    def _apply_action(self, action, tls_id="41896158"):
+        if action == 0:
+            return
+        elif action == 1:
+            current_phase = self._get_current_phase(tls_id)
+            if current_phase in [0, 3]:
+                if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
+                    return
+            elif current_phase in [2, 5]:
+                if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
+                    return
+            elif current_phase in [1, 4]:
+                if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
+                    return
+            try:
+                program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+                num_phases = len(program.phases)
+                if num_phases == 0:
+                    return
+                next_phase = (current_phase + 1) % num_phases
+                # print(f"Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
+                traci.trafficlight.setPhase(tls_id, next_phase)
+                self.last_switch_step = self.current_simulation_step
+            except traci.exceptions.TraCIException as e:
+                print(f"TraCIException during phase switch: {e}")
 
     def _get_reward(self, state):
         total_queue = sum(state[:-1])
@@ -224,14 +224,14 @@ def get_action_from_policy(state):
             Q_table[state] = np.zeros(len(ACTIONS))
         return int(np.argmax(Q_table[state]))
 
-def evaluate_q_learning(env, Q_table, episodes=10):
+def evaluate_q_learning(env, Q_table, episodes=10, steps_per_episode=STEPS_PER_EPISODE):
     eval_rewards = []
     eval_queues = []
     for _ in range(episodes):
         state, _ = env.reset()
         cumulative_reward = 0.0
         total_queue = 0.0
-        for step in range(STEPS_PER_EPISODE):
+        for step in range(steps_per_episode):
             state_discrete = discretize_state(state)
             if state_discrete not in Q_table:
                 Q_table[state_discrete] = np.zeros(len(ACTIONS))
@@ -246,24 +246,22 @@ def evaluate_q_learning(env, Q_table, episodes=10):
         eval_queues.append(avg_queue)
     avg_eval_reward = np.mean(eval_rewards)
     avg_eval_queue = np.mean(eval_queues)
-    print(f"[Q-learning] Evaluation over {episodes} episodes: Avg Reward: {avg_eval_reward:.2f}, Avg Queue Length: {avg_eval_queue:.2f}")
+    print(f"Q-learning evaluation: Avg Reward: {avg_eval_reward:.2f}, Avg Queue Length: {avg_eval_queue:.2f}")
     return avg_eval_reward, avg_eval_queue
 
-# Episode-based Training Loop
+# Main Q-learning training loop with periodic evaluation
 print("\n=== Starting Episode-based Q-learning ===")
 env = SumoEnv(Sumo_config)
-
 eval_episode_history = []
 eval_reward_history = []
 eval_queue_history = []
-eval_episodes = [50, 100, 150, 200, 250, 300, 350, 400]
+EVAL_INTERVAL = 25
+EVAL_EPISODES = 10
 
 for episode in range(TOTAL_EPISODES):
     state, info = env.reset()
     cumulative_reward = 0.0
     total_queue = 0.0
-
-    print(f"\n=== Episode {episode + 1}/{TOTAL_EPISODES} ===")
     for step in range(STEPS_PER_EPISODE):
         action = get_action_from_policy(state)
         new_state, reward, terminated, truncated, info = env.step(action)
@@ -271,54 +269,46 @@ for episode in range(TOTAL_EPISODES):
         cumulative_reward += reward
         total_queue += sum(new_state[:-1])
         state = new_state
-
-        if step % 100 == 0:
-            print(f"Step {step}/{STEPS_PER_EPISODE}, Action: {action}, Reward: {reward:.2f}, Cumulative Reward: {cumulative_reward:.2f}")
-
         if terminated or truncated:
             break
-
-    # Use environment's recorded statistics
-    episode_history = env.episode_history
-    reward_history = env.reward_history
-    queue_history = env.queue_history
-    print(f"Episode {episode + 1} Summary: Cumulative Reward: {reward_history[-1]:.2f}, Avg Queue Length: {queue_history[-1]:.2f}")
-
-    if (episode + 1) in eval_episodes:
-        avg_eval_reward, avg_eval_queue = evaluate_q_learning(env, Q_table, episodes=10)
+    print(f"Episode {episode+1} Summary: Cumulative Reward: {env.reward_history[-1]:.2f}, Avg Queue Length: {env.queue_history[-1]:.2f}")
+    # Evaluate every EVAL_INTERVAL episodes
+    if (episode + 1) % EVAL_INTERVAL == 0:
+        avg_eval_reward, avg_eval_queue = evaluate_q_learning(env, Q_table, episodes=EVAL_EPISODES)
         eval_episode_history.append(episode + 1)
         eval_reward_history.append(avg_eval_reward)
         eval_queue_history.append(avg_eval_queue)
 
-# For Q-learning (QL.py)
-np.save("ql_episode_history.npy", env.episode_history)
-np.save("ql_reward_history.npy", env.reward_history)
-np.save("ql_queue_history.npy", env.queue_history)
+# Save all histories (training and eval)
+np.save("ql_episode_history.npy", np.array(env.episode_history))
+np.save("ql_reward_history.npy", np.array(env.reward_history))
+np.save("ql_queue_history.npy", np.array(env.queue_history))
 np.save("ql_eval_episode_history.npy", np.array(eval_episode_history))
 np.save("ql_eval_reward_history.npy", np.array(eval_reward_history))
 np.save("ql_eval_queue_history.npy", np.array(eval_queue_history))
-
 import pickle
 with open("q_table.pkl", "wb") as f:
     pickle.dump(Q_table, f)
-    
 env.close()
 
-# Visualization of Results
-plt.figure(figsize=(10, 6))
-plt.plot(episode_history, reward_history, marker='o', linestyle='-', label="Cumulative Reward", color='#1f77b4')
-plt.xlabel("Episode")
-plt.ylabel("Cumulative Reward")
-plt.title("Q-learning: Cumulative Reward over Episodes")
+# Step 7: Side-by-side TRAINING + EVAL plots (as DQN/PPO)
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(env.episode_history, env.reward_history, label='Training Reward', color='blue')
+plt.plot(eval_episode_history, eval_reward_history, 'o-', label='Evaluation Reward', color='orange')
+plt.xlabel('Episode')
+plt.ylabel('Cumulative Reward')
+plt.title('Training and Evaluation Rewards')
 plt.legend()
 plt.grid(True)
-plt.savefig("cumulative_reward_ql.png")
-
-plt.figure(figsize=(10, 6))
-plt.plot(episode_history, queue_history, marker='o', linestyle='-', label="Average Queue Length", color='#ff7f0e')
-plt.xlabel("Episode")
-plt.ylabel("Average Queue Length")
-plt.title("Q-learning: Average Queue Length over Episodes")
+plt.subplot(1, 2, 2)
+plt.plot(env.episode_history, env.queue_history, label='Training Avg Queue', color='blue')
+plt.plot(eval_episode_history, eval_queue_history, 'o-', label='Evaluation Avg Queue', color='orange')
+plt.xlabel('Episode')
+plt.ylabel('Average Queue Length')
+plt.title('Training and Evaluation Queue Lengths')
 plt.legend()
 plt.grid(True)
-plt.savefig("queue_length_ql.png")
+plt.tight_layout()
+plt.savefig('training_evaluation_metrics_ql.png')
+plt.close()

@@ -1,4 +1,3 @@
-# Import necessary libraries
 import os
 import sys
 import numpy as np
@@ -8,7 +7,7 @@ import matplotlib.pyplot as plt
 import gymnasium as gym
 from gymnasium import spaces
 import traci
-from stable_baselines3 import PPO  # Changed from DQN to PPO
+from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_checker import check_env
 
@@ -23,21 +22,20 @@ else:
 Sumo_config = [
     'sumo',
     '-c', 'config/ideal.sumocfg',
-    '--step-length', '0.1',
     '--delay', '1000',
     '--lateral-resolution', '0'
 ]
 
-# Step 4: Define Custom SUMO Environment (Reusing your SumoEnv class)
+# Step 4: Define Custom SUMO Environment
 class SumoEnv(gym.Env):
     def __init__(self, config):
         super(SumoEnv, self).__init__()
         self.config = config
         self.action_space = spaces.Discrete(2)  # 0 = keep phase, 1 = switch phase
         self.observation_space = spaces.Box(low=0, high=np.inf, shape=(7,), dtype=np.float32)
-        self.min_green_steps = 100
-        self.min_yellow_steps = 30
-        self.min_pedestrian_steps = 50
+        self.min_green_steps = 10
+        self.min_yellow_steps = 5
+        self.min_pedestrian_steps = 7
         self.step_count = 0
         self.max_steps = 1800
         self.cumulative_reward = 0.0
@@ -62,6 +60,7 @@ class SumoEnv(gym.Env):
         self.episode_count += 1
         state = self._get_state()
         info = {"episode": self.episode_count}
+        print(f"[Env] Resetting environment for episode {self.episode_count}")
         return state, info
 
     def step(self, action):
@@ -89,7 +88,9 @@ class SumoEnv(gym.Env):
                 "cumulative_reward": self.cumulative_reward,
                 "avg_queue_length": avg_queue
             }
-            print(f"Episode {info['episode']} Summary: Cumulative Reward: {info['cumulative_reward']:.2f}, Avg Queue Length: {info['avg_queue_length']:.2f}")
+            print(f"[Env] Episode {info['episode']} Summary: Cumulative Reward: {info['cumulative_reward']:.2f}, Avg Queue Length: {info['avg_queue_length']:.2f}")
+        # else:
+        #     print(f"[Env] Step {self.step_count}/{self.max_steps}: Action {action}, Reward {reward:.2f}")
 
         return new_state, reward, terminated, truncated, info
 
@@ -112,51 +113,50 @@ class SumoEnv(gym.Env):
 
         return np.array([q_EB_0, q_SB_0, q_SB_1, q_WB_0, q_NB_0, q_NB_1, current_phase], dtype=np.float32)
 
+    # def _apply_action(self, action, tls_id="41896158"):
+    #     if action == 0:
+    #         return
+    #     elif action == 1:
+    #         if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
+    #             current_phase = self._get_current_phase(tls_id)
+    #             try:
+    #                 program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+    #                 num_phases = len(program.phases)
+    #                 if num_phases == 0:
+    #                     return
+    #                 next_phase = (current_phase + 1) % num_phases
+    #                 traci.trafficlight.setPhase(tls_id, next_phase)
+    #                 self.last_switch_step = self.current_simulation_step
+    #             except traci.exceptions.TraCIException:
+    #                 pass
+
     def _apply_action(self, action, tls_id="41896158"):
         if action == 0:
             return
         elif action == 1:
-            if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
-                current_phase = self._get_current_phase(tls_id)
-                try:
-                    program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-                    num_phases = len(program.phases)
-                    if num_phases == 0:
-                        return
-                    next_phase = (current_phase + 1) % num_phases
-                    traci.trafficlight.setPhase(tls_id, next_phase)
-                    self.last_switch_step = self.current_simulation_step
-                except traci.exceptions.TraCIException:
-                    pass
-
-    # Uncomment the following method if you want to use a more complex action application logic
-    # def _apply_action(self, action, tls_id="41896158"):
-    #     if action == 0:
-    #         return  # Keep current phase
-    #     elif action == 1:
-    #         current_phase = self._get_current_phase(tls_id)
-    #         # Enforce minimum durations based on phase type
-    #         if current_phase in [0, 3]:  # Primary green phases
-    #             if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
-    #                 return
-    #         elif current_phase in [2, 5]:  # Yellow phases
-    #             if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
-    #                 return
-    #         elif current_phase in [1, 4]:  # Pedestrian/transition green phases
-    #             if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
-    #                 return
-    #         try:
-    #             program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-    #             num_phases = len(program.phases)
-    #             if num_phases == 0:
-    #                 return
-    #             next_phase = (current_phase + 1) % num_phases
-    #             print(f"Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
-    #             traci.trafficlight.setPhase(tls_id, next_phase)
-    #             self.last_switch_step = self.current_simulation_step
-    #         except traci.exceptions.TraCIException as e:
-    #             print(f"TraCIException during phase switch: {e}")
-    #             pass
+            current_phase = self._get_current_phase(tls_id)
+            if current_phase in [0, 3]:
+                if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
+                    return
+            elif current_phase in [2, 5]:
+                if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
+                    return
+            elif current_phase in [1, 4]:
+                if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
+                    return
+            try:
+                program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+                num_phases = len(program.phases)
+                if num_phases == 0:
+                    print(f"[Env] Error: No phases found for TLS {tls_id}")
+                    return
+                next_phase = (current_phase + 1) % num_phases
+                # print(f"[Env] Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
+                traci.trafficlight.setPhase(tls_id, next_phase)
+                self.last_switch_step = self.current_simulation_step
+            except traci.exceptions.TraCIException as e:
+                print(f"[Env] TraCIException during phase switch: {e}")
+                return
 
     def _get_reward(self, state):
         total_queue = sum(state[:-1])
@@ -178,115 +178,107 @@ class SumoEnv(gym.Env):
 
 # Step 5: Custom Callback for Episode Control
 class EpisodeCallbackPPO(BaseCallback):
-    def __init__(self, env, total_episodes=400, eval_interval=50, eval_episodes=10, verbose=0):
-        super(EpisodeCallbackPPO, self).__init__(verbose)
+    def __init__(self, env, total_episodes, eval_interval=25, eval_episodes=10, verbose=0):
+        super().__init__(verbose)
         self.env = env
         self.total_episodes = total_episodes
         self.eval_interval = eval_interval
         self.eval_episodes = eval_episodes
-        self.current_episode = 0
-        
-        # Lists to store evaluation metrics
         self.eval_episode_history = []
         self.eval_reward_history = []
         self.eval_queue_history = []
 
-    def _evaluate_agent(self):
+    def _on_step(self):
+        return True  # Required for continuation
+
+    def _on_rollout_end(self):
+        current_episode = self.env.episode_count
+        print(f"[Callback] Rollout end at episode {current_episode}")
+        if current_episode % self.eval_interval == 0 and current_episode > 0:
+            self._evaluate_agent(current_episode)
+        if current_episode >= self.total_episodes:
+            print(f"[Callback] Total episodes {self.total_episodes} reached, final evaluation")
+            self._evaluate_agent(current_episode)
+        return True
+
+    def _evaluate_agent(self, episode_number):
+        print(f"[Callback] PPO Evaluation at episode {episode_number}")
         eval_rewards = []
         eval_queues = []
-        for _ in range(self.eval_episodes):
+        for ep in range(self.eval_episodes):
             state, _ = self.env.reset()
             done = False
-            episode_reward = 0
-            episode_queue = 0
+            ep_reward = 0.0
+            ep_queue = 0.0
             steps = 0
             while not done:
                 action, _ = self.model.predict(state, deterministic=True)
                 state, reward, terminated, truncated, _ = self.env.step(action)
                 done = terminated or truncated
-                episode_reward += reward
-                episode_queue += sum(state[:-1])
+                ep_reward += reward
+                ep_queue += sum(state[:-1])
                 steps += 1
-            avg_queue = episode_queue / steps if steps > 0 else 0
-            eval_rewards.append(episode_reward)
+            avg_queue = ep_queue / steps if steps > 0 else 0
+            eval_rewards.append(ep_reward)
             eval_queues.append(avg_queue)
-        avg_eval_reward = np.mean(eval_rewards)
-        avg_eval_queue = np.mean(eval_queues)
-        print(f"[PPO] Evaluation after episode {self.current_episode}: Avg Reward: {avg_eval_reward:.2f}, Avg Queue Length: {avg_eval_queue:.2f}")
+        mean_r = np.mean(eval_rewards)
+        mean_q = np.mean(eval_queues)
+        self.eval_episode_history.append(episode_number)
+        self.eval_reward_history.append(mean_r)
+        self.eval_queue_history.append(mean_q)
+        print(f"[Callback] Evaluation at episode {episode_number}: Mean Reward: {mean_r:.2f}, Mean Avg Queue: {mean_q:.2f}")
 
-        # Store evaluation results
-        self.eval_episode_history.append(self.current_episode)
-        self.eval_reward_history.append(avg_eval_reward)
-        self.eval_queue_history.append(avg_eval_queue)
-
-        # Save evaluation results
-        np.save("ppo_eval_episode_history.npy", np.array(self.eval_episode_history))
-        np.save("ppo_eval_reward_history.npy", np.array(self.eval_reward_history))
-        np.save("ppo_eval_queue_history.npy", np.array(self.eval_queue_history))
-
-    def _on_step(self) -> bool:
-        if self.env.step_count >= self.env.max_steps:
-            self.current_episode += 1
-            if self.current_episode % self.eval_interval == 0:
-                self._evaluate_agent()
-            if self.current_episode >= self.total_episodes:
-                return False
-        return True
-# Step 6: Episode-based Training Loop with Stable Baselines3 (PPO)
-print("\n=== Starting Episode-based Reinforcement Learning (PPO with Stable Baselines3) ===")
-
-# Initialize environment
+# Step 6: Training Loop 
+print("\n=== Starting Episode-based RL (PPO with SB3) ===")
 env = SumoEnv(Sumo_config)
-
-# Check environment compatibility
 check_env(env)
-
-# Initialize PPO model
 model = PPO(
     policy="MlpPolicy",
     env=env,
-    learning_rate=0.001,  # Suitable for PPO
-    n_steps=2048,          # Number of steps per rollout
-    batch_size=64,         # Mini-batch size
-    n_epochs=10,           # Number of epochs per update
-    gamma=0.95,            # Discount factor
-    gae_lambda=0.95,       # GAE for advantage estimation
-    clip_range=0.2,        # Clipping parameter for PPO
+    learning_rate=0.0003,
+    n_steps=env.max_steps,
+    batch_size=64,
+    n_epochs=10,
+    gamma=0.99,   # Like DQN
+    gae_lambda=0.95,
+    clip_range=0.2,
     verbose=1
 )
-
-# Train for exactly 100 episodes
-TOTAL_EPISODES = 400
-callback = EpisodeCallbackPPO(env, total_episodes=TOTAL_EPISODES)
+TOTAL_EPISODES = 250
+callback = EpisodeCallbackPPO(env, total_episodes=TOTAL_EPISODES, eval_interval=25, eval_episodes=10)
 model.learn(total_timesteps=TOTAL_EPISODES * env.max_steps, callback=callback, progress_bar=True)
-# Save the model
 model.save("ppo_sumo")
 
-# For PPO (PPO_working.py)
-np.save("ppo_episode_history.npy", env.episode_history)
-np.save("ppo_reward_history.npy", env.reward_history)
-np.save("ppo_queue_history.npy", env.queue_history)
+# Save metrics
+np.save("ppo_episode_history.npy", np.array(env.episode_history))
+np.save("ppo_reward_history.npy", np.array(env.reward_history))
+np.save("ppo_queue_history.npy", np.array(env.queue_history))
+np.save("ppo_eval_episode_history.npy", np.array(callback.eval_episode_history))
+np.save("ppo_eval_reward_history.npy", np.array(callback.eval_reward_history))
+np.save("ppo_eval_queue_history.npy", np.array(callback.eval_queue_history))
 
-# Close the environment
 env.close()
 
-# Step 7: Visualization of Results
-# Plot Cumulative Reward
-plt.figure(figsize=(10, 6))
-plt.plot(env.episode_history, env.reward_history, marker='o', linestyle='-', label="Cumulative Reward", color='#1f77b4')
-plt.xlabel("Episode")
-plt.ylabel("Cumulative Reward")
-plt.title("RL Training (PPO): Cumulative Reward over Episodes")
+# Step 7: Side-by-side TRAINING + EVAL plots (like in your DQN)
+plt.figure(figsize=(12, 5))
+# Plot Rewards
+plt.subplot(1, 2, 1)
+plt.plot(env.episode_history, env.reward_history, label='Training Reward', color='blue')
+plt.plot(callback.eval_episode_history, callback.eval_reward_history, 'o-', label='Evaluation Reward', color='orange')
+plt.xlabel('Episode')
+plt.ylabel('Cumulative Reward')
+plt.title('Training and Evaluation Rewards')
 plt.legend()
 plt.grid(True)
-plt.savefig("cumulative_reward_PPO.png")
-
-# Plot Average Queue Length
-plt.figure(figsize=(10, 6))
-plt.plot(env.episode_history, env.queue_history, marker='o', linestyle='-', label="Average Queue Length", color='#ff7f0e')
-plt.xlabel("Episode")
-plt.ylabel("Average Queue Length")
-plt.title("RL Training (PPO): Average Queue Length over Episodes")
+# Plot Queue Lengths
+plt.subplot(1, 2, 2)
+plt.plot(env.episode_history, env.queue_history, label='Training Avg Queue', color='blue')
+plt.plot(callback.eval_episode_history, callback.eval_queue_history, 'o-', label='Evaluation Avg Queue', color='orange')
+plt.xlabel('Episode')
+plt.ylabel('Average Queue Length')
+plt.title('Training and Evaluation Queue Lengths')
 plt.legend()
 plt.grid(True)
-plt.savefig("queue_length_PPO.png")
+plt.tight_layout()
+plt.savefig('training_evaluation_metrics_ppo.png')
+plt.close()

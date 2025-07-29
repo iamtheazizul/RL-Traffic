@@ -20,7 +20,7 @@ else:
 Sumo_config = [
     'sumo',
     '-c', 'config/ideal.sumocfg',
-    '--step-length', '0.1',
+    # '--step-length', '0.1',
     '--delay', '1000',
     '--lateral-resolution', '0'
 ]
@@ -160,10 +160,10 @@ class SumoEnvFixedTime(gym.Env):
                 print(f"Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching to phase {self.current_phase_index} (duration {self.phase_durations[self.current_phase_index]}s)")
             except traci.exceptions.TraCIException as e:
                 print(f"Error switching to phase {self.current_phase_index}: {e}")
-        # Log current phase and time to detect premature switches
-        current_phase = self._get_current_phase(tls_id)
-        if current_phase != self.current_phase_index:
-            print(f"Warning: At step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s), SUMO phase {current_phase} does not match expected phase {self.current_phase_index}")
+        # # Log current phase and time to detect premature switches
+        # current_phase = self._get_current_phase(tls_id)
+        # if current_phase != self.current_phase_index:
+        #     print(f"Warning: At step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s), SUMO phase {current_phase} does not match expected phase {self.current_phase_index}")
 
     # Reward function computed using the queue length
     def _get_reward(self, state):
@@ -213,7 +213,7 @@ except traci.exceptions.TraCIException as e:
 traci.close()
 
 # Run for 100 episodes
-TOTAL_EPISODES = 400
+TOTAL_EPISODES = 250
 for episode in range(TOTAL_EPISODES):
     state, info = env.reset()
     for step in range(env.max_steps):

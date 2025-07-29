@@ -3,9 +3,7 @@ import os
 import sys
 import numpy as np
 import matplotlib
-
 matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
 import gymnasium as gym
 from gymnasium import spaces
@@ -13,7 +11,7 @@ import traci
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import BaseCallback
 
-# Step 2: Establish path to SUMO (SUMO_HOME)
+# Step 2: Establish path to SUMO
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
     sys.path.append(tools)
@@ -22,9 +20,8 @@ else:
 
 # Step 3: Define SUMO configuration
 Sumo_config = [
-    'sumo',  # Use 'sumo' for non-GUI mode
-    '-c', 'config/ideal.sumocfg',  # goes one directory up
-    '--step-length', '0.1',
+    'sumo',
+    '-c', 'config/ideal.sumocfg',
     '--delay', '1000',
     '--lateral-resolution', '0'
 ]
@@ -34,30 +31,25 @@ class SumoEnv(gym.Env):
     def __init__(self, config):
         super(SumoEnv, self).__init__()
         self.config = config
-        self.action_space = spaces.Discrete(2)  # 0 = keep phase, 1 = switch phase
-        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(7,), dtype=np.float32)  # (q_EB_0, q_EB_1, q_EB_2, q_SB_0, q_SB_1, q_SB_2, current_phase)
-        self.min_green_steps = 100  # 10s for primary green phases (0 and 3)
-        self.min_yellow_steps = 30  # 3s for yellow phases (2 and 5)
-        self.min_pedestrian_steps = 50  # 5s for pedestrian/transition green phases (1 and 4)
+        self.action_space = spaces.Discrete(2)
+        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(7,), dtype=np.float32)
+        self.min_green_steps = 10
+        self.min_yellow_steps = 5
+        self.min_pedestrian_steps = 7
         self.step_count = 0
-        self.max_steps = 1800  # Steps per episode
+        self.max_steps = 1800
         self.cumulative_reward = 0.0
         self.total_queue = 0.0
         self.last_switch_step = -self.min_green_steps
         self.current_simulation_step = 0
         self.episode_count = 0
-        # Lists to record data for plotting
         self.episode_history = []
         self.reward_history = []
         self.queue_history = []
-        self.braking_history = []
 
-    # Each time an episode is done, we reset the environment
     def reset(self, seed=None, **kwargs):
-        # Close any existing SUMO connection
         if traci.isLoaded():
             traci.close()
-        # Start new SUMO simulation
         traci.start(self.config)
         self.step_count = 0
         self.cumulative_reward = 0.0
@@ -69,8 +61,6 @@ class SumoEnv(gym.Env):
         info = {"episode": self.episode_count}
         return state, info
 
-    # Functions where a simualtion step is taken, action prompted and reward calculated
-    # Computes cumulative reward and avg. queue length
     def step(self, action):
         self.current_simulation_step = self.step_count
         self._apply_action(action)
@@ -100,7 +90,6 @@ class SumoEnv(gym.Env):
 
         return new_state, reward, terminated, truncated, info
 
-    # Get state values from detectors
     def _get_state(self):
         detector_EB_0 = "e2_2"
         detector_SB_0 = "e2_3"
@@ -116,11 +105,10 @@ class SumoEnv(gym.Env):
         q_WB_0 = self._get_queue_length(detector_WB_0)
         q_NB_0 = self._get_queue_length(detector_NB_0)
         q_NB_1 = self._get_queue_length(detector_NB_1)
-
         current_phase = self._get_current_phase(traffic_light_id)
 
         return np.array([q_EB_0, q_SB_0, q_SB_1, q_WB_0, q_NB_0, q_NB_1, current_phase], dtype=np.float32)
-
+    
     # def _apply_action(self, action, tls_id="41896158"):
     #     if action == 0:
     #         return
@@ -134,198 +122,185 @@ class SumoEnv(gym.Env):
 
     # Apply the next action when prompted. Switching between one phase to another requires a buffer time.
     # **NEED TO FIX**
+    # def _apply_action(self, action, tls_id="41896158"):
+    #     if action == 0:
+    #         return
+    #     elif action == 1:
+    #         if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
+    #             current_phase = self._get_current_phase(tls_id)
+    #             try:
+    #                 program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+    #                 num_phases = len(program.phases)
+    #                 if num_phases == 0:
+    #                     return
+    #                 # Increment phase by 1 modulo total phases
+    #                 next_phase = (current_phase + 1) % num_phases
+    #                 traci.trafficlight.setPhase(tls_id, next_phase)
+    #                 self.last_switch_step = self.current_simulation_step
+    #             except traci.exceptions.TraCIException:
+    #                 # Handle possible SUMO connection issues gracefully
+    #                 pass
     def _apply_action(self, action, tls_id="41896158"):
         if action == 0:
             return
         elif action == 1:
-            if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
-                current_phase = self._get_current_phase(tls_id)
-                try:
-                    program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-                    num_phases = len(program.phases)
-                    if num_phases == 0:
-                        return
-                    # Increment phase by 1 modulo total phases
-                    next_phase = (current_phase + 1) % num_phases
-                    traci.trafficlight.setPhase(tls_id, next_phase)
-                    self.last_switch_step = self.current_simulation_step
-                except traci.exceptions.TraCIException:
-                    # Handle possible SUMO connection issues gracefully
-                    pass
-    
-    # Uncomment the following method if you want to use a more complex action application logic
-    # def _apply_action(self, action, tls_id="41896158"):
-    #     if action == 0:
-    #         return  # Keep current phase
-    #     elif action == 1:
-    #         current_phase = self._get_current_phase(tls_id)
-    #         # Enforce minimum durations based on phase type
-    #         if current_phase in [0, 3]:  # Primary green phases
-    #             if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
-    #                 # print(f"Cannot switch: Phase {current_phase} (green) has not reached min_green_steps ({self.min_green_steps})")
-    #                 return
-    #         elif current_phase in [2, 5]:  # Yellow phases
-    #             if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
-    #                 # print(f"Cannot switch: Phase {current_phase} (yellow) has not reached min_yellow_steps ({self.min_yellow_steps})")
-    #                 return
-    #         elif current_phase in [1, 4]:  # Pedestrian/transition green phases
-    #             if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
-    #                 # print(f"Cannot switch: Phase {current_phase} (pedestrian) has not reached min_pedestrian_steps ({self.min_pedestrian_steps})")
-    #                 return
-    #         # # Check if vehicles are approaching to avoid abrupt red light
-    #         # if self._vehicles_approaching(tls_id):
-    #         #     print(f"Cannot switch: Vehicles approaching in phase {current_phase}")
-    #         #     return
-    #         try:
-    #             program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-    #             num_phases = len(program.phases)
-    #             if num_phases == 0:
-    #                 return
-    #             # Increment phase by 1 modulo total phases
-    #             next_phase = (current_phase + 1) % num_phases
-    #             print(f"Switching from phase {current_phase} to phase {next_phase} at step {self.current_simulation_step}")
-    #             traci.trafficlight.setPhase(tls_id, next_phase)
-    #             self.last_switch_step = self.current_simulation_step
-    #         except traci.exceptions.TraCIException:
-    #             print("TraCIException occurred during phase switch")
-    #             pass
-    
-    # Reward function computed using the queue length
+            current_phase = self._get_current_phase(tls_id)
+            if current_phase in [0, 3]:
+                if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
+                    return
+            elif current_phase in [2, 5]:
+                if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
+                    return
+            elif current_phase in [1, 4]:
+                if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
+                    return
+            try:
+                program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+                num_phases = len(program.phases)
+                if num_phases == 0:
+                    return
+                next_phase = (current_phase + 1) % num_phases
+                traci.trafficlight.setPhase(tls_id, next_phase)
+                self.last_switch_step = self.current_simulation_step
+            except traci.exceptions.TraCIException as e:
+                print(f"TraCIException during phase switch: {e}")
+
     def _get_reward(self, state):
-        total_queue = sum(state[:-1])  # Exclude current_phase
+        total_queue = sum(state[:-1])
         reward = -float(total_queue)
         return reward
 
-    # TraCI call for queue data
     def _get_queue_length(self, detector_id):
         return traci.lanearea.getLastStepVehicleNumber(detector_id)
 
-    # TraCI call for phase data
     def _get_current_phase(self, tls_id):
         return traci.trafficlight.getPhase(tls_id)
 
-    # TraCI call for closing
     def close(self):
         if traci.isLoaded():
             traci.close()
 
-    # For non-GUI mode
     def render(self, mode="human"):
-        pass  # No rendering for non-GUI SUMO
+        pass
 
-# Step 5: Custom Callback for Episode Control
+# Step 5: Episode Callback with Robust Evaluation
 class EpisodeCallbackDQN(BaseCallback):
-    def __init__(self, env, total_episodes=400, eval_interval=50, eval_episodes=10, verbose=0):
+    def __init__(self, env, total_episodes, eval_interval=25, eval_episodes=10, verbose=0):
         super(EpisodeCallbackDQN, self).__init__(verbose)
         self.env = env
         self.total_episodes = total_episodes
         self.eval_interval = eval_interval
         self.eval_episodes = eval_episodes
-        self.current_episode = 0
-        
-        # Lists to store evaluation metrics
         self.eval_episode_history = []
         self.eval_reward_history = []
         self.eval_queue_history = []
 
-    def _evaluate_agent(self):
-        eval_rewards = []
-        eval_queues = []
-        for _ in range(self.eval_episodes):
-            state, _ = self.env.reset()
-            done = False
-            episode_reward = 0
-            episode_queue = 0
-            steps = 0
-            while not done:
-                action, _ = self.model.predict(state, deterministic=True)
-                state, reward, terminated, truncated, _ = self.env.step(action)
-                done = terminated or truncated
-                episode_reward += reward
-                episode_queue += sum(state[:-1])
-                steps += 1
-            avg_queue = episode_queue / steps if steps > 0 else 0
-            eval_rewards.append(episode_reward)
-            eval_queues.append(avg_queue)
-        avg_eval_reward = np.mean(eval_rewards)
-        avg_eval_queue = np.mean(eval_queues)
-        print(f"[DQN] Evaluation after episode {self.current_episode}: Avg Reward: {avg_eval_reward:.2f}, Avg Queue Length: {avg_eval_queue:.2f}")
-
-        # Store evaluation results
-        self.eval_episode_history.append(self.current_episode)
-        self.eval_reward_history.append(avg_eval_reward)
-        self.eval_queue_history.append(avg_eval_queue)
-
-        # Save evaluation results
-        np.save("dqn_eval_episode_history.npy", np.array(self.eval_episode_history))
-        np.save("dqn_eval_reward_history.npy", np.array(self.eval_reward_history))
-        np.save("dqn_eval_queue_history.npy", np.array(self.eval_queue_history))
-
-    def _on_step(self) -> bool:
-        if self.env.step_count >= self.env.max_steps:
-            self.current_episode += 1
-            if self.current_episode % self.eval_interval == 0:
-                self._evaluate_agent()
-            if self.current_episode >= self.total_episodes:
-                return False
+    def _on_step(self):
         return True
 
-# Step 6: Episode-based Training Loop with Stable Baselines3
+    def _on_rollout_end(self):
+        current_episode = self.env.episode_count
+        # print(f"Callback triggered at episode {current_episode}")
+        if current_episode % self.eval_interval == 0 and current_episode > 0:
+            print(f"\n=== Starting Evaluation at Episode {current_episode} ===")
+            eval_rewards = []
+            eval_queues = []
+            for eval_ep in range(self.eval_episodes):
+                print(f"Running evaluation episode {eval_ep + 1}/{self.eval_episodes}")
+                try:
+                    state, _ = self.env.reset()
+                    done = False
+                    total_reward = 0.0
+                    total_queue = 0.0
+                    steps = 0
+                    while not done:
+                        action, _ = self.model.predict(state, deterministic=True)
+                        state, reward, terminated, truncated, info = self.env.step(action)
+                        total_reward += reward
+                        total_queue += sum(state[:-1])
+                        steps += 1
+                        done = terminated or truncated
+                    avg_queue = total_queue / steps if steps > 0 else 0
+                    eval_rewards.append(total_reward)
+                    eval_queues.append(avg_queue)
+                    print(f"Evaluation Episode {eval_ep + 1}: Reward: {total_reward:.2f}, Avg Queue: {avg_queue:.2f}")
+                except traci.exceptions.TraCIException as e:
+                    print(f"TraCIException during evaluation episode {eval_ep + 1}: {e}")
+                    continue
+            if eval_rewards:  # Only store if evaluation was successful
+                mean_reward = np.mean(eval_rewards)
+                mean_queue = np.mean(eval_queues)
+                self.eval_episode_history.append(current_episode)
+                self.eval_reward_history.append(mean_reward)
+                self.eval_queue_history.append(mean_queue)
+                print(f"Evaluation Summary at Episode {current_episode}: Mean Reward: {mean_reward:.2f}, Mean Avg Queue: {mean_queue:.2f}")
+            else:
+                print(f"Evaluation at Episode {current_episode} failed due to errors")
+        return True
+
+# Step 6: Training Loop
 print("\n=== Starting Episode-based Reinforcement Learning (DQN with Stable Baselines3) ===")
 
-# Initialize environment
 env = SumoEnv(Sumo_config)
-
-# Check environment compatibility
 from stable_baselines3.common.env_checker import check_env
 check_env(env)
 
-# Initialize DQN model
 model = DQN(
     policy="MlpPolicy",
     env=env,
-    learning_rate=0.001,  # ALPHA
-    gamma=0.95,          # GAMMA
-    exploration_initial_eps=0.1,  # EPSILON
-    exploration_final_eps=0.1,    # Constant exploration
-    exploration_fraction=1.0,
+    learning_rate=0.0001,  # Fixed: 10e-5 was too low, use 0.0001
+    gamma=0.99,            # Increased from 0.9 to 0.99 for better long-term planning
+    exploration_initial_eps=1,  # Start with 100% exploration
+    exploration_final_eps=0.01,   # End with 1% exploration
+    exploration_fraction=0.3,     # Decay over 30% of training
     verbose=1,
-    learning_starts=0,
-    train_freq=1,
-    batch_size=32,
-    target_update_interval=1000
+    learning_starts=5000,         # Start learning after 5000 steps
+    train_freq=2,                 # Update every 2 steps (balanced)
+    batch_size=128,                # Increased batch size
+    target_update_interval=1000,   # Update target network more frequently
+    buffer_size=100000,           # Larger replay buffer
+    tau=0.01,                      # Soft target update
+    gradient_steps=2              # Gradient steps per update matched with update frequency
 )
 
-# Train for exactly 100 episodes
-TOTAL_EPISODES = 400
-callback = EpisodeCallbackDQN(env, total_episodes=TOTAL_EPISODES)
+TOTAL_EPISODES = 250  # For 10 evaluations (250 / 25 = 10)
+callback = EpisodeCallbackDQN(env, total_episodes=TOTAL_EPISODES, eval_interval=25, eval_episodes=10)
 model.learn(total_timesteps=TOTAL_EPISODES * env.max_steps, callback=callback, progress_bar=True)
-# Save the model
 model.save("dqn_sumo")
 
-# For DQN (DQN_working.py, after updating)
-np.save("dqn_episode_history.npy", env.episode_history)
-np.save("dqn_reward_history.npy", env.reward_history)
-np.save("dqn_queue_history.npy", env.queue_history)
+# Save training and evaluation metrics
+np.save("dqn_episode_history.npy", np.array(env.episode_history))
+np.save("dqn_reward_history.npy", np.array(env.reward_history))
+np.save("dqn_queue_history.npy", np.array(env.queue_history))
+np.save("dqn_eval_episode_history.npy", np.array(callback.eval_episode_history))
+np.save("dqn_eval_reward_history.npy", np.array(callback.eval_reward_history))
+np.save("dqn_eval_queue_history.npy", np.array(callback.eval_queue_history))
 
-# Close the environment
+# Step 7: Plot Training and Evaluation Metrics
+plt.figure(figsize=(12, 5))
+
+# Plot Rewards
+plt.subplot(1, 2, 1)
+plt.plot(env.episode_history, env.reward_history, label='Training Reward', color='blue')
+plt.plot(callback.eval_episode_history, callback.eval_reward_history, 'o-', label='Evaluation Reward', color='orange')
+plt.xlabel('Episode')
+plt.ylabel('Cumulative Reward')
+plt.title('Training and Evaluation Rewards')
+plt.legend()
+plt.grid(True)
+
+# Plot Queue Lengths
+plt.subplot(1, 2, 2)
+plt.plot(env.episode_history, env.queue_history, label='Training Avg Queue', color='blue')
+plt.plot(callback.eval_episode_history, callback.eval_queue_history, 'o-', label='Evaluation Avg Queue', color='orange')
+plt.xlabel('Episode')
+plt.ylabel('Average Queue Length')
+plt.title('Training and Evaluation Queue Lengths')
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.savefig('training_evaluation_metrics.png')
+plt.close()
+
 env.close()
-
-# Step 7: Visualization of Results
-plt.figure(figsize=(10, 6))
-plt.plot(env.episode_history, env.reward_history, marker='o', linestyle='-', label="Cumulative Reward")
-plt.xlabel("Episode")
-plt.ylabel("Cumulative Reward")
-plt.title("RL Training (DQN): Cumulative Reward over Episodes")
-plt.legend()
-plt.grid(True)
-plt.savefig("cumulative_reward_DQN.png")
-
-plt.figure(figsize=(10, 6))
-plt.plot(env.episode_history, env.queue_history, marker='o', linestyle='-', label="Average Queue Length")
-plt.xlabel("Episode")
-plt.ylabel("Average Queue Length")
-plt.title("RL Training (DQN): Average Queue Length over Episodes")
-plt.legend()
-plt.grid(True)
-plt.savefig("queue_length_DQN.png")
