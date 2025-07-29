@@ -113,50 +113,50 @@ class SumoEnv(gym.Env):
 
         return np.array([q_EB_0, q_SB_0, q_SB_1, q_WB_0, q_NB_0, q_NB_1, current_phase], dtype=np.float32)
 
-    # def _apply_action(self, action, tls_id="41896158"):
-    #     if action == 0:
-    #         return
-    #     elif action == 1:
-    #         if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
-    #             current_phase = self._get_current_phase(tls_id)
-    #             try:
-    #                 program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-    #                 num_phases = len(program.phases)
-    #                 if num_phases == 0:
-    #                     return
-    #                 next_phase = (current_phase + 1) % num_phases
-    #                 traci.trafficlight.setPhase(tls_id, next_phase)
-    #                 self.last_switch_step = self.current_simulation_step
-    #             except traci.exceptions.TraCIException:
-    #                 pass
-
     def _apply_action(self, action, tls_id="41896158"):
         if action == 0:
             return
         elif action == 1:
-            current_phase = self._get_current_phase(tls_id)
-            if current_phase in [0, 3]:
-                if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
-                    return
-            elif current_phase in [2, 5]:
-                if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
-                    return
-            elif current_phase in [1, 4]:
-                if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
-                    return
-            try:
-                program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
-                num_phases = len(program.phases)
-                if num_phases == 0:
-                    print(f"[Env] Error: No phases found for TLS {tls_id}")
-                    return
-                next_phase = (current_phase + 1) % num_phases
-                # print(f"[Env] Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
-                traci.trafficlight.setPhase(tls_id, next_phase)
-                self.last_switch_step = self.current_simulation_step
-            except traci.exceptions.TraCIException as e:
-                print(f"[Env] TraCIException during phase switch: {e}")
-                return
+            if self.current_simulation_step - self.last_switch_step >= self.min_green_steps:
+                current_phase = self._get_current_phase(tls_id)
+                try:
+                    program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+                    num_phases = len(program.phases)
+                    if num_phases == 0:
+                        return
+                    next_phase = (current_phase + 1) % num_phases
+                    traci.trafficlight.setPhase(tls_id, next_phase)
+                    self.last_switch_step = self.current_simulation_step
+                except traci.exceptions.TraCIException:
+                    pass
+
+    # def _apply_action(self, action, tls_id="41896158"):
+    #     if action == 0:
+    #         return
+    #     elif action == 1:
+    #         current_phase = self._get_current_phase(tls_id)
+    #         if current_phase in [0, 3]:
+    #             if self.current_simulation_step - self.last_switch_step < self.min_green_steps:
+    #                 return
+    #         elif current_phase in [2, 5]:
+    #             if self.current_simulation_step - self.last_switch_step < self.min_yellow_steps:
+    #                 return
+    #         elif current_phase in [1, 4]:
+    #             if self.current_simulation_step - self.last_switch_step < self.min_pedestrian_steps:
+    #                 return
+    #         try:
+    #             program = traci.trafficlight.getAllProgramLogics(tls_id)[0]
+    #             num_phases = len(program.phases)
+    #             if num_phases == 0:
+    #                 print(f"[Env] Error: No phases found for TLS {tls_id}")
+    #                 return
+    #             next_phase = (current_phase + 1) % num_phases
+    #             # print(f"[Env] Step {self.current_simulation_step} (time {self.current_simulation_step * 0.1:.1f}s): Switching from phase {current_phase} to phase {next_phase}")
+    #             traci.trafficlight.setPhase(tls_id, next_phase)
+    #             self.last_switch_step = self.current_simulation_step
+    #         except traci.exceptions.TraCIException as e:
+    #             print(f"[Env] TraCIException during phase switch: {e}")
+    #             return
 
     def _get_reward(self, state):
         total_queue = sum(state[:-1])
