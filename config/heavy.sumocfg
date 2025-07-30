@@ -7,7 +7,7 @@
 
     <input>
         <net-file value="../network/cleaned_network.net.xml"/>
-        <route-files value="demand/heavy/heavy_routes.rou.xml"/>
+        <route-files value="demand/heavy/heavy_routes_2.rou.xml"/>
         <additional-files value="../additional/bus_stops.add.xml"/>
     </input>
 
