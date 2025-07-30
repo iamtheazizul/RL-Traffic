@@ -21,7 +21,7 @@ else:
 # Step 3: Define SUMO configuration
 Sumo_config = [
     'sumo',
-    '-c', 'config/ideal.sumocfg',
+    '-c', 'config/light.sumocfg',
     '--delay', '1000',
     '--lateral-resolution', '0'
 ]

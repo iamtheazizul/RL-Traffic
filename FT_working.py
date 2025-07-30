@@ -19,7 +19,7 @@ else:
 # Define SUMO configuration
 Sumo_config = [
     'sumo',
-    '-c', 'config/heavy.sumocfg',
+    '-c', 'config/light.sumocfg',
     # '--step-length', '0.1',
     '--delay', '1000',
     '--lateral-resolution', '0'
